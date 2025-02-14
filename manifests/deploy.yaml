@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: todo
+  name: todo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo
+  template:
+    metadata:
+      labels:
+        app: todo
+    spec:
+      shareProcessNamespace: true 
+      containers:
+      - image: todo:v0.1
+        name: todo
+        imagePullPolicy: Never
+        env:
+          - name: DB_PASSWORD
+            value: "password"
+          - name: DB_HOST
+            value: "pg-postgresql"
+      - name: autoinstrumentation-go
+        image: otel/autoinstrumentation-go
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: OTEL_LOG_LEVEL
+            value: debug
+          - name:  OTEL_GO_AUTO_GLOBAL
+            value: 'true'
+          - name: OTEL_GO_AUTO_TARGET_EXE
+            value: /todo
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "https://<ENDPOINT>:4317"
+          - name: OTEL_EXPORTER_OTLP_HEADERS
+            value: "Authorization=Bearer <TOKEN>"
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: "grpc"
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: "service.namespace=dash0,service.version=1.0"
+          - name: OTEL_SERVICE_NAME
+            value: "todo-service"
+          - name: OTEL_GO_AUTO_INCLUDE_DB_STATEMENT
+            value: 'true'
+          - name: OTEL_GO_AUTO_PARSE_DB_STATEMENT
+            value: 'true'
+        securityContext:
+          runAsUser: 0
+          privileged: true
+
